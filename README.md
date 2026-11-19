@@ -10,7 +10,7 @@ Play it here: https://make.fun/bounty/gta6-01 — built by @exrazoor. My referra
 
 ## The game
 
-- **One file, no dependencies**: `game/index.html` (72,763 bytes) — hand-written raw WebGL2, zero external requests, no libraries, no models, no textures downloaded. Everything is procedural.
+- **One file, no dependencies**: `game/index.html` (73,986 bytes) — hand-written raw WebGL2, zero external requests, no libraries, no models, no textures downloaded. Everything is procedural.
 - **Chase camera 3D** behind a sleek lofted red sports coupe (spinning wheels, steering front wheels, drift smoke + sparks, headlight halos, taillight trails).
 - **Halcyon Keys**: a sun-soaked coastal city — palm-lined streets, neon storefronts and signs, beach + pier + sea to the west, parks, wet-road reflections, puddles, sunset fog.
 - **Living streets**: 30 pedestrians who walk the sidewalks and step aside from traffic (hit one and it's a $500 fine + more heat), 5 traffic cars, police cruisers with flashing red/blue light bars, and a police helicopter with a searchlight that orbits you.

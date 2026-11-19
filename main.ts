@@ -11,7 +11,7 @@
 // helicopter with a searchlight, drift smoke and sparks, three weapons (Pistol / SMG / Rifle),
 // and a full cyberpunk HUD (minimap, mission briefing, cash, wanted stars, speedometer, Juno's
 // portrait). Lose the cops before the scanner window closes: +$5,000 per escape. One file,
-// 72,763 bytes, zero external requests.
+// 73,986 bytes, zero external requests.
 //
 // Serve it locally with `node serve.ts`, then open http://localhost:8080.
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:

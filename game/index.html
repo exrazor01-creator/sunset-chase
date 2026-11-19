@@ -263,23 +263,51 @@ const PALETTE=[[0.62,0.35,0.28],[0.66,0.42,0.45],[0.32,0.38,0.55],[0.78,0.68,0.5
 const cityTex=new Mesh(), citySolid=new Mesh(), signsMesh=new Mesh(), transpMesh=new Mesh(), shadowMesh=new Mesh(), shopMesh=new Mesh();
 (function buildCity(){
   const uvW=[[0,0],[1,0],[1,1],[0,1]];
+  // Ground quads are SEGMENTED (~110u): the fog is per-vertex, so a single 1900u
+  // quad interpolates fog from its far vertices and washes the near foreground
+  // pale pink. Short segments keep the foreground asphalt dark and true.
+  const SEG=110;
+  function stripZ(x0,x1,z0,z1,y,col,alt){ // segmented strip along z (RX roads + sidewalks)
+    let k=0;
+    for(let z=z0;z<z1;z+=SEG,k++){ const ze=Math.min(z+SEG,z1);
+      citySolid.q([x0,y,z],[x1,y,z],[x1,y,ze],[x0,y,ze],alt&&k%2?alt:col,uvW); }
+  }
+  function stripX(z0,z1,x0,x1,y,col,alt){ // segmented strip along x (RZ roads + sidewalks)
+    let k=0;
+    for(let x=x0;x<x1;x+=SEG,k++){ const xe=Math.min(x+SEG,x1);
+      citySolid.q([x,y,z0],[xe,y,z0],[xe,y,z1],[x,y,z1],alt&&k%2?alt:col,uvW); }
+  }
+  function groundQ(x0,z0,x1,z1,y,col,cell=110){ // segmented ground rect (base + parks)
+    for(let x=x0;x<x1;x+=cell){ const xe=Math.min(x+cell,x1);
+      for(let z=z0;z<z1;z+=cell){ const ze=Math.min(z+cell,z1);
+        citySolid.q([x,y,z],[xe,y,z],[xe,y,ze],[x,y,ze],col,uvW); } }
+  }
   // ground base + beach + sea
-  citySolid.q([-1120,0,-950],[1200,0,-950],[1200,0,950],[-1120,0,950],[0.19,0.18,0.23],uvW);
+  groundQ(-1120,-950,1200,950,0,[0.19,0.18,0.23]);
   citySolid.q([-1300,0.02,-950],[-1120,0.02,-950],[-1120,0.02,950],[-1300,0.02,950],[0.78,0.64,0.44],uvW); // beach sand
   citySolid.q([-2500,-0.4,-1500],[-1300,-0.4,-1500],[-1300,-0.4,1500],[-2500,-0.4,1500],[0.1,0.28,0.48],uvW); // sea
-  // roads (asphalt strips) + sidewalks + dashes + crosswalks
-  const ASP=[0.07,0.07,0.10], SW=[0.27,0.25,0.29], DASH=[0.95,0.75,0.25], CW=[0.68,0.68,0.72];
+  // roads (dark asphalt strips) + sidewalks + edge lines + tire tracks + dashes + crosswalks
+  const ASP=[0.05,0.05,0.09], ASP2=[0.043,0.043,0.08], SW=[0.24,0.22,0.26], DASH=[0.95,0.75,0.25], CW=[0.68,0.68,0.72];
+  const EDGE=[0.72,0.72,0.76], TRACK=[0.028,0.028,0.055];
   for(const x of RX){
-    citySolid.q([x-8,0.05,-950],[x+8,0.05,-950],[x+8,0.05,950],[x-8,0.05,950],ASP,uvW);
-    citySolid.q([x-13,0.03,-950],[x-8,0.03,-950],[x-8,0.03,950],[x-13,0.03,950],SW,uvW);
-    citySolid.q([x+8,0.03,-950],[x+13,0.03,-950],[x+13,0.03,950],[x+8,0.03,950],SW,uvW);
-    for(let z=-920;z<930;z+=44){ if(RZ.some(r=>Math.abs(z-r)<14))continue; citySolid.q([x-0.6,0.07,z],[x+0.6,0.07,z],[x+0.6,0.07,z+18],[x-0.6,0.07,z+18],DASH,uvW); }
+    stripZ(x-8,x+8,-950,950,0.05,ASP,ASP2);
+    stripZ(x-13,x-8,-950,950,0.03,SW);
+    stripZ(x+8,x+13,-950,950,0.03,SW);
+    stripZ(x-7.7,x-7.2,-950,950,0.06,EDGE); // solid white edge lines
+    stripZ(x+7.2,x+7.7,-950,950,0.06,EDGE);
+    stripZ(x-3.5,x-1.7,-950,950,0.06,TRACK); // dark tire tracks
+    stripZ(x+1.7,x+3.5,-950,950,0.06,TRACK);
+    for(let z=-920;z<930;z+=44){ if(RZ.some(r=>Math.abs(z-r)<14))continue; citySolid.q([x-0.9,0.07,z],[x+0.9,0.07,z],[x+0.9,0.07,z+22],[x-0.9,0.07,z+22],DASH,uvW); }
   }
   for(const z of RZ){
-    citySolid.q([-1120,0.05,z-8],[1200,0.05,z-8],[1200,0.05,z+8],[-1120,0.05,z+8],ASP,uvW);
-    citySolid.q([-1120,0.03,z-13],[1200,0.03,z-13],[1200,0.03,z-8],[-1120,0.03,z-8],SW,uvW);
-    citySolid.q([-1120,0.03,z+8],[1200,0.03,z+8],[1200,0.03,z+13],[-1120,0.03,z+13],SW,uvW);
-    for(let x=-1090;x<1110;x+=44){ if(RX.some(r=>Math.abs(x-r)<14))continue; citySolid.q([x,0.07,z-0.6],[x+18,0.07,z-0.6],[x+18,0.07,z+0.6],[x,0.07,z+0.6],DASH,uvW); }
+    stripX(z-8,z+8,-1120,1200,0.05,ASP,ASP2);
+    stripX(z-13,z-8,-1120,1200,0.03,SW);
+    stripX(z+8,z+13,-1120,1200,0.03,SW);
+    stripX(z-7.7,z-7.2,-1120,1200,0.06,EDGE);
+    stripX(z+7.2,z+7.7,-1120,1200,0.06,EDGE);
+    stripX(z-3.5,z-1.7,-1120,1200,0.06,TRACK);
+    stripX(z+1.7,z+3.5,-1120,1200,0.06,TRACK);
+    for(let x=-1090;x<1110;x+=44){ if(RX.some(r=>Math.abs(x-r)<14))continue; citySolid.q([x,0.07,z-0.9],[x+22,0.07,z-0.9],[x+22,0.07,z+0.9],[x,0.07,z+0.9],DASH,uvW); }
   }
   for(const x of RX)for(const z of RZ){ // crosswalks
     for(let k=-3;k<=3;k++){ citySolid.q([x-9+k*2.6,0.08,z-7],[x-7.4+k*2.6,0.08,z-7],[x-7.4+k*2.6,0.08,z-2],[x-9+k*2.6,0.08,z-2],CW,uvW); }
@@ -289,7 +317,7 @@ const cityTex=new Mesh(), citySolid=new Mesh(), signsMesh=new Mesh(), transpMesh
   for(let i=0;i<RX.length-1;i++)for(let j=0;j<RZ.length-1;j++){
     const bx0=RX[i]+14,bx1=RX[i+1]-14,bz0=RZ[j]+14,bz1=RZ[j+1]-14;
     if(R()<0.22){ // park: palms + lawn
-      citySolid.q([bx0,0.04,bz0],[bx1,0.04,bz0],[bx1,0.04,bz1],[bx0,0.04,bz1],[0.12,0.32,0.18],uvW);
+      groundQ(bx0,bz0,bx1,bz1,0.04,[0.12,0.32,0.18]);
       for(let k=0;k<5;k++)palm(bx0+R()* (bx1-bx0),bz0+R()*(bz1-bz0));
       continue;
     }
